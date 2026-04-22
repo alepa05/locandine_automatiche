@@ -201,7 +201,7 @@ file = st.file_uploader("Carica Excel", type=["xlsx"])
 if file:
     df = pd.read_excel(file, dtype={"codice_articolo": str})
     df.columns = [c.lower().strip() for c in df.columns]
-    df["codice_articolo"] = df["codice_articolo"].astype(str).str.strip()
+    df["codice_articolo"] = df["codice_articolo"].astype(str).str.strip().str.zfill(7)
 
     required = ["codice_articolo", "descrizione", "prezzo", "scadenza_offerta"]
     missing = [c for c in required if c not in df.columns]
@@ -209,27 +209,68 @@ if file:
     if missing:
         st.error("Mancano queste colonne nel file Excel: " + ", ".join(missing))
     else:
-        st.subheader("Anteprima dati")
-        st.dataframe(df[required], use_container_width=True)
+        left, center, right = st.columns([1, 2, 1])
 
-        selected = []
+        with center:
+            st.subheader("Anteprima dati")
+            st.dataframe(df[required], use_container_width=True)
 
-        st.subheader("Seleziona prodotti")
-        for i, row in df.iterrows():
-            label = f"{row['codice_articolo']} - {row['descrizione']}"
-            if st.checkbox(label, key=i):
-                selected.append(i)
+            st.subheader("Seleziona prodotti")
 
-        if st.button("Genera ZIP locandine"):
-            if not selected:
-                st.warning("Seleziona almeno un prodotto.")
+            search_code = st.text_input(
+                "Cerca prodotto per codice",
+                placeholder="Es. 0326542"
+            ).strip()
+
+            if search_code:
+                df_filtered = df[df["codice_articolo"].str.contains(search_code, na=False)]
             else:
-                zip_file = build_zip_from_rows(df, selected)
+                df_filtered = df
 
-                st.success(f"ZIP creato con {len(selected)} locandine.")
-                st.download_button(
-                    label="Scarica ZIP",
-                    data=zip_file,
-                    file_name="locandine.zip",
-                    mime="application/zip"
-                )
+            if df_filtered.empty:
+                st.warning("Nessun prodotto trovato con questo codice.")
+            else:
+                selected_rows = []
+
+                with st.form("form_locandine", clear_on_submit=False):
+                    for i, row in df_filtered.iterrows():
+                        label = f"{row['codice_articolo']} - {row['descrizione']}"
+                        checked = st.checkbox(label, key=f"check_{i}")
+
+                        if checked:
+                            nuova_descrizione = st.text_input(
+                                "Modifica descrizione",
+                                value=str(row["descrizione"]),
+                                key=f"desc_{i}"
+                            )
+
+                            selected_rows.append({
+                                "index": i,
+                                "descrizione_modificata": nuova_descrizione
+                            })
+
+                    submitted = st.form_submit_button("Genera ZIP locandine")
+
+                if submitted:
+                    if not selected_rows:
+                        st.warning("Seleziona almeno un prodotto.")
+                    else:
+                        righe_finali = []
+
+                        for item in selected_rows:
+                            row = df.loc[item["index"]].copy()
+                            row["descrizione"] = item["descrizione_modificata"]
+                            righe_finali.append(row)
+
+                        zip_file = build_zip_from_rows(
+                            pd.DataFrame(righe_finali),
+                            range(len(righe_finali))
+                        )
+
+                        st.success(f"ZIP creato con {len(righe_finali)} locandine.")
+                        st.download_button(
+                            label="Scarica ZIP",
+                            data=zip_file,
+                            file_name="locandine.zip",
+                            mime="application/zip"
+                        )

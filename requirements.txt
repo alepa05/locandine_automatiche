@@ -1,0 +1,4 @@
+streamlist
+pamdas
+pillow
+openyxl

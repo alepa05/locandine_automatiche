@@ -258,7 +258,7 @@ if file:
                         righe_finali = []
 
                         for item in selected_rows:
-                            row = df.loc[item["index"]].copy()
+                            row = df.iloc[item["index"]].copy()
                             row["descrizione"] = item["descrizione_modificata"]
                             righe_finali.append(row)
 

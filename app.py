@@ -185,7 +185,7 @@ def build_zip_from_rows(df, selected_indices):
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for idx in selected_indices:
-            row = df.loc[idx]
+            row = df.iloc[idx]
             codice, img_bytes = generate_locandina_bytes(row)
             zf.writestr(f"{codice}.jpg", img_bytes.getvalue())
 

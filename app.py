@@ -1,5 +1,7 @@
 import os
 import re
+import io
+import zipfile
 import pandas as pd
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
@@ -14,8 +16,6 @@ FONT_PRICE = "fonts/BebasNeue-Regular.ttf"
 FONT_CODE = "fonts/Oswald-light.ttf"
 FONT_FOOTER = "fonts/Montserrat-Bold.ttf"
 
-OUTPUT_DIR = "output"
-
 IMG_W = 2483
 IMG_H = 3509
 
@@ -26,10 +26,6 @@ st.title("Generatore Locandine")
 # =========================================
 # FUNZIONI UTILI
 # =========================================
-def ensure_output_dir():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-
-
 def text_size(draw, text, font):
     bbox = draw.textbbox((0, 0), text, font=font)
     return bbox[2] - bbox[0], bbox[3] - bbox[1]
@@ -40,32 +36,6 @@ def draw_centered(draw, text, font, y, image_width, fill="black"):
     x = (image_width - w) // 2
     draw.text((x, y), text, font=font, fill=fill)
     return x, y, w, h
-
-
-def wrap_text_two_lines(draw, text, font_path, max_width, start_size, min_size=20):
-    text = str(text).strip().upper()
-    words = text.split()
-
-    size = start_size
-    while size >= min_size:
-        font = ImageFont.truetype(font_path, size)
-
-        w, _ = text_size(draw, text, font)
-        if w <= max_width:
-            return [text], font
-
-        for i in range(1, len(words)):
-            line1 = " ".join(words[:i])
-            line2 = " ".join(words[i:])
-            w1, _ = text_size(draw, line1, font)
-            w2, _ = text_size(draw, line2, font)
-            if w1 <= max_width and w2 <= max_width:
-                return [line1, line2], font
-
-        size -= 2
-
-    font = ImageFont.truetype(font_path, min_size)
-    return [text], font
 
 
 def format_price(value):
@@ -89,40 +59,14 @@ def format_date_it(value):
     return str(value).strip().upper()
 
 
-# =========================================
-# GENERAZIONE LOCANDINA
-# =========================================
-def generate_locandina(row):
-    img = Image.open(TEMPLATE_PATH).convert("RGB")
-    draw = ImageDraw.Draw(img)
-
-    descrizione = str(row["descrizione"]).strip().upper()
-
-    # separa automaticamente la grammatura finale tipo (330 G), (1 KG), (50 PZ) ecc.
-    gram = None
-    match = re.search(r"\(([^()]+)\)\s*$", descrizione)
-    if match:
-       gram = match.group(1).strip()   # prende solo il contenuto interno, senza parentesi
-       descrizione = descrizione[:match.start()].strip()
-  
-    prezzo = format_price(row["prezzo"])
-    codice = str(row["codice_articolo"]).strip()
-    data = format_date_it(row["scadenza_offerta"])
-
-    RED = (236, 0, 19)
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
-
-    # =========================
-    # DESCRIZIONE SU MAX 3 RIGHE A FONT FISSO
-    # =========================
+def build_description_lines(draw, descrizione, font_path):
     MAX_WIDTH = 1800
-    FONT_SIZE_DESC = 125
     MAX_LINES = 3
-
-    font_desc = ImageFont.truetype(FONT_DESC, FONT_SIZE_DESC)
+    FONT_SIZE_DESC = 125
 
     words = descrizione.split()
+    font_desc = ImageFont.truetype(font_path, FONT_SIZE_DESC)
+
     lines = []
     current_line = ""
 
@@ -140,11 +84,34 @@ def generate_locandina(row):
     if current_line:
         lines.append(current_line)
 
-    # se c'è la grammatura, una riga è riservata a quella
-    max_desc_lines = MAX_LINES - 1 if gram else MAX_LINES
+    return lines[:MAX_LINES], font_desc
 
-    # taglia eventuali righe in eccesso
-    lines = lines[:max_desc_lines]
+
+def generate_locandina_bytes(row):
+    img = Image.open(TEMPLATE_PATH).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    descrizione = str(row["descrizione"]).strip().upper()
+
+    # separa grammatura finale tra parentesi e la stampa sotto senza parentesi
+    gram = None
+    match = re.search(r"\(([^()]+)\)\s*$", descrizione)
+    if match:
+        gram = match.group(1).strip()
+        descrizione = descrizione[:match.start()].strip()
+
+    prezzo = format_price(row["prezzo"])
+    codice = str(row["codice_articolo"]).strip().zfill(7)
+    data = format_date_it(row["scadenza_offerta"])
+
+    RED = (236, 0, 19)
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+
+    # =========================
+    # DESCRIZIONE
+    # =========================
+    lines, font_desc = build_description_lines(draw, descrizione, FONT_DESC)
 
     _, line_height = text_size(draw, "TEST", font_desc)
     line_spacing = 40
@@ -171,8 +138,8 @@ def generate_locandina(row):
 
     font_price = ImageFont.truetype(FONT_PRICE, FONT_SIZE)
 
-    num_w, num_h = text_size(draw, numero, font_price)
-    dec_w, dec_h = text_size(draw, decimali, font_price)
+    num_w, _ = text_size(draw, numero, font_price)
+    dec_w, _ = text_size(draw, decimali, font_price)
 
     comma_overlap = 30
     comma_gap = 250
@@ -180,15 +147,12 @@ def generate_locandina(row):
     total_w = (num_w - comma_overlap) + comma_gap + dec_w
     start_x = PRICE_CENTER_X - (total_w // 2)
 
-    # numero principale
     draw.text((start_x, PRICE_Y), numero, font=font_price, fill=RED)
 
-    # virgola
     comma_x = start_x + num_w - comma_overlap
     comma_y = PRICE_Y + 50
     draw.text((comma_x, comma_y), ",", font=font_price, fill=RED)
 
-    # decimali
     dec_x = comma_x + comma_gap
     dec_y = PRICE_Y
     draw.text((dec_x, dec_y), decimali, font=font_price, fill=RED)
@@ -208,15 +172,27 @@ def generate_locandina(row):
     footer_text = f"OFFERTA VALIDA FINO AL {data}"
     draw_centered(draw, footer_text, footer_font, 3330, IMG_W, WHITE)
 
-    # =========================
-    # SAVE
-    # =========================
-    ensure_output_dir()
-    path = os.path.join(OUTPUT_DIR, f"{codice}.jpg")
-    img.save(path, quality=95)
+    # salva in memoria
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format="JPEG", quality=95)
+    img_bytes.seek(0)
 
-    return path
-    
+    return codice, img_bytes
+
+
+def build_zip_from_rows(df, selected_indices):
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for idx in selected_indices:
+            row = df.loc[idx]
+            codice, img_bytes = generate_locandina_bytes(row)
+            zf.writestr(f"{codice}.jpg", img_bytes.getvalue())
+
+    zip_buffer.seek(0)
+    return zip_buffer
+
+
 # =========================================
 # APP STREAMLIT
 # =========================================
@@ -224,8 +200,8 @@ file = st.file_uploader("Carica Excel", type=["xlsx"])
 
 if file:
     df = pd.read_excel(file, dtype={"codice_articolo": str})
-    df["codice_articolo"] = df["codice_articolo"].str.strip()
     df.columns = [c.lower().strip() for c in df.columns]
+    df["codice_articolo"] = df["codice_articolo"].astype(str).str.strip()
 
     required = ["codice_articolo", "descrizione", "prezzo", "scadenza_offerta"]
     missing = [c for c in required if c not in df.columns]
@@ -233,17 +209,27 @@ if file:
     if missing:
         st.error("Mancano queste colonne nel file Excel: " + ", ".join(missing))
     else:
-        st.dataframe(df[required])
+        st.subheader("Anteprima dati")
+        st.dataframe(df[required], use_container_width=True)
 
         selected = []
 
+        st.subheader("Seleziona prodotti")
         for i, row in df.iterrows():
             label = f"{row['codice_articolo']} - {row['descrizione']}"
             if st.checkbox(label, key=i):
                 selected.append(i)
 
-        if st.button("Genera Locandine"):
-            for i in selected:
-                generate_locandina(df.loc[i])
+        if st.button("Genera ZIP locandine"):
+            if not selected:
+                st.warning("Seleziona almeno un prodotto.")
+            else:
+                zip_file = build_zip_from_rows(df, selected)
 
-            st.success("Fatto!")
+                st.success(f"ZIP creato con {len(selected)} locandine.")
+                st.download_button(
+                    label="Scarica ZIP",
+                    data=zip_file,
+                    file_name="locandine.zip",
+                    mime="application/zip"
+                )

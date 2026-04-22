@@ -13,7 +13,7 @@ TEMPLATE_PATH = "template/template_locandina.jpg"
 
 FONT_DESC = "fonts/Montserrat-ExtraBold.ttf"
 FONT_PRICE = "fonts/BebasNeue-Regular.ttf"
-FONT_CODE = "fonts/Oswald-light.ttf"
+FONT_CODE = "fonts/Oswald-Light.ttf"
 FONT_FOOTER = "fonts/Montserrat-Bold.ttf"
 
 IMG_W = 2483

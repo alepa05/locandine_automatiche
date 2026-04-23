@@ -316,7 +316,7 @@ if file:
                 
                 today = datetime.now().strftime("%d-%m-%Y")
                 
-                    st.download_button(
+                st.download_button(
                         label="Genera e scarica ZIP",
                         data=zip_file,
                         file_name=f"locandine_{today}.zip",

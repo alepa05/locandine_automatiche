@@ -297,10 +297,22 @@ if file:
                         row["descrizione"] = item["descrizione_modificata"]
                         righe_finali.append(row)
                 
-                     zip_file = build_zip_from_rows(
-                        pd.DataFrame(righe_finali).reset_index(drop=True),
-                        range(len(righe_finali))
-                     )
+                     zprogress_bar = st.progress(0)
+                     status_text = st.empty()
+                    
+                    with st.spinner("Generazione locandine in corso..."):
+                        for percent in range(0, 101, 20):
+                            progress_bar.progress(percent)
+                            status_text.text(f"Preparazione file... {percent}%")
+                    
+                        zip_file = build_zip_from_rows(
+                            pd.DataFrame(righe_finali).reset_index(drop=True),
+                            range(len(righe_finali))
+                        )
+                    
+                        progress_bar.progress(100)
+                        status_text.text("File pronto per il download.")
+
                 
                      today = datetime.now().strftime("%d-%m-%Y")
                 

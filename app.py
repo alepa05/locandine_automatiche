@@ -212,9 +212,7 @@ if file:
         left, center, right = st.columns([1, 2, 1])
 
         with center:
-            st.subheader("Anteprima dati")
-            st.dataframe(df[required], use_container_width=True)
-
+        
             st.subheader("Seleziona prodotti")
 
             search_code = st.text_input(
@@ -232,7 +230,7 @@ if file:
             else:
                 selected_rows = []
 
-st.subheader("Seleziona prodotti e modifica descrizione")
+    st.subheader("Seleziona prodotti e modifica descrizione")
 
 for i, row in df_filtered.iterrows():
     label = f"{row['codice_articolo']} - {row['descrizione']}"

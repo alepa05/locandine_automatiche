@@ -293,5 +293,5 @@ if file:
                         )
 
                         if downloaded:
-                            reset_selezione(df)
+                            st.session_state.clear()
                             st.rerun()

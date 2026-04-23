@@ -232,7 +232,7 @@ if file:
             else:
                 selected_rows = []
 
-                with st.form("form_locandine", clear_on_submit=False):
+                with st.form("form_locandine", clear_on_submit=True):
                     for i, row in df_filtered.iterrows():
                         label = f"{row['codice_articolo']} - {row['descrizione']}"
                         checked = st.checkbox(label, key=f"check_{i}")

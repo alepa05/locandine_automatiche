@@ -212,7 +212,6 @@ if file:
         left, center, right = st.columns([1, 2, 1])
 
         with center:
-        
             st.subheader("Seleziona prodotti")
 
             search_code = st.text_input(
@@ -230,45 +229,44 @@ if file:
             else:
                 selected_rows = []
 
-    st.subheader("Seleziona prodotti e modifica descrizione")
+                st.subheader("Seleziona prodotti e modifica descrizione")
 
-for i, row in df_filtered.iterrows():
-    label = f"{row['codice_articolo']} - {row['descrizione']}"
-    checked = st.checkbox(label, key=f"check_{i}")
+                for i, row in df_filtered.iterrows():
+                    label = f"{row['codice_articolo']} - {row['descrizione']}"
+                    checked = st.checkbox(label, key=f"check_{i}")
 
-    if checked:
-        nuova_descrizione = st.text_input(
-            "Modifica descrizione",
-            value=str(row["descrizione"]),
-            key=f"desc_{i}"
-        )
+                    if checked:
+                        nuova_descrizione = st.text_input(
+                            "Modifica descrizione",
+                            value=str(row["descrizione"]),
+                            key=f"desc_{i}"
+                        )
 
-        selected_rows.append({
-            "index": i,
-            "descrizione_modificata": nuova_descrizione
-        })
+                        selected_rows.append({
+                            "index": i,
+                            "descrizione_modificata": nuova_descrizione
+                        })
 
-if st.button("Genera ZIP locandine"):
-    if not selected_rows:
-        st.warning("Seleziona almeno un prodotto.")
-    else:
-        righe_finali = []
+                if st.button("Genera ZIP locandine"):
+                    if not selected_rows:
+                        st.warning("Seleziona almeno un prodotto.")
+                    else:
+                        righe_finali = []
 
-        for item in selected_rows:
-            row = df.loc[item["index"]].copy()
-            row["descrizione"] = item["descrizione_modificata"]
-            righe_finali.append(row)
+                        for item in selected_rows:
+                            row = df.loc[item["index"]].copy()
+                            row["descrizione"] = item["descrizione_modificata"]
+                            righe_finali.append(row)
 
-        zip_file = build_zip_from_rows(
-            pd.DataFrame(righe_finali).reset_index(drop=True),
-            range(len(righe_finali))
-        )
+                        zip_file = build_zip_from_rows(
+                            pd.DataFrame(righe_finali).reset_index(drop=True),
+                            range(len(righe_finali))
+                        )
 
-        st.success(f"ZIP creato con {len(righe_finali)} locandine.")
-        st.download_button(
-            label="Scarica ZIP",
-            data=zip_file,
-            file_name="locandine.zip",
-            mime="application/zip"
-        )
-        
+                        st.success(f"ZIP creato con {len(righe_finali)} locandine.")
+                        st.download_button(
+                            label="Scarica ZIP",
+                            data=zip_file,
+                            file_name="locandine.zip",
+                            mime="application/zip"
+                        )

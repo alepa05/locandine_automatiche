@@ -289,7 +289,7 @@ if file:
                         mime="application/zip"
                 )
 
-                 if downloaded:
-                 reset_selezione(df)
-                 st.rerun()
+                if downloaded:
+                    reset_selezione(df)
+                    st.rerun()
                      

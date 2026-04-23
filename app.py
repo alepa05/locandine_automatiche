@@ -282,13 +282,13 @@ if file:
                         st.success(f"ZIP creato con {len(righe_finali)} locandine.")
                         today = datetime.now().strftime("%d-%m-%Y")
 
-                        downloaded = st.download_button(
+                downloaded = st.download_button(
                         label="Scarica ZIP",
                         data=zip_file,
                         file_name=f"locandine_{today}.zip",
                         mime="application/zip"
-                        )
+                )
 
-if downloaded:
-    reset_selezione(df)
-    st.rerun()
+                if downloaded:
+                reset_selezione(df)
+                st.rerun()

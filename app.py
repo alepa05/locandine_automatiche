@@ -275,6 +275,6 @@ if file:
                         st.download_button(
                         label="Scarica ZIP",
                         data=zip_file,
-                        file_name=f"{today}.zip",
+                        file_name=f"locandine_{today}.zip",
                         mime="application/zip"
                     )

@@ -20,6 +20,12 @@ IMG_H = 3509
 st.set_page_config(page_title="Generatore Locandine", layout="wide")
 st.title("Generatore Locandine")
 
+if "zip_file" not in st.session_state:
+    st.session_state.zip_file = None
+
+if "zip_filename" not in st.session_state:
+    st.session_state.zip_filename = None
+
 st.markdown("""
 <style>
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar {
@@ -182,7 +188,7 @@ def generate_locandina_bytes(row):
     return codice, img_bytes
 
 
-def build_zip_from_rows(df, selected_indices, progress_bar=None, status_text=None):
+def build_zip_from_rows(df, selected_indices, status_text=None):
     zip_buffer = io.BytesIO()
     total = len(selected_indices)
 
@@ -197,10 +203,9 @@ def build_zip_from_rows(df, selected_indices, progress_bar=None, status_text=Non
 
             zf.writestr(f"{safe_name}.jpg", img_bytes.getvalue())
 
-            if progress_bar is not None and status_text is not None:
+            if status_text is not None:
                 percent = int((count / total) * 100)
-                progress_bar.progress(percent)
-                status_text.text(f"Generazione locandina {count} di {total}... {percent}%")
+                status_text.info(f"Generazione locandine in corso... {percent}%")
 
     zip_buffer.seek(0)
     return zip_buffer
@@ -288,37 +293,38 @@ if file:
                                 "descrizione_modificata": nuova_descrizione
                             })
 
-                if selected_rows:
-                    righe_finali = []
+                if st.button("Genera ZIP locandine", use_container_width=True):
+                    if not selected_rows:
+                        st.warning("Seleziona almeno un prodotto.")
+                    else:
+                        righe_finali = []
 
-                    for item in selected_rows:
-                        row = df.loc[item["index"]].copy()
-                        row["descrizione"] = item["descrizione_modificata"]
-                        righe_finali.append(row)
+                        for item in selected_rows:
+                            row = df.loc[item["index"]].copy()
+                            row["descrizione"] = item["descrizione_modificata"]
+                            righe_finali.append(row)
 
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
+                        status_text = st.empty()
 
-                    with st.spinner("Generazione locandine in corso..."):
-                        zip_file = build_zip_from_rows(
-                            pd.DataFrame(righe_finali).reset_index(drop=True),
-                            range(len(righe_finali)),
-                            progress_bar=progress_bar,
-                            status_text=status_text
-                        )
+                        with st.spinner("Generazione locandine in corso..."):
+                            zip_file = build_zip_from_rows(
+                                pd.DataFrame(righe_finali).reset_index(drop=True),
+                                range(len(righe_finali)),
+                                status_text=status_text
+                            )
 
-                    progress_bar.progress(100)
-                    status_text.text("File pronto per il download.")
+                        today = datetime.now().strftime("%d-%m-%Y")
 
-                    today = datetime.now().strftime("%d-%m-%Y")
+                        st.session_state.zip_file = zip_file.getvalue()
+                        st.session_state.zip_filename = f"locandine_{today}.zip"
 
+                        status_text.success("File pronto per il download.")
+
+                if st.session_state.zip_file is not None:
                     st.download_button(
-                        label="Genera e scarica ZIP",
-                        data=zip_file,
-                        file_name=f"locandine_{today}.zip",
+                        label="Scarica ZIP",
+                        data=st.session_state.zip_file,
+                        file_name=st.session_state.zip_filename,
                         mime="application/zip",
                         use_container_width=True
                     )
-
-                else:
-                    st.warning("Seleziona almeno un prodotto.")

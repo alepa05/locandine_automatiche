@@ -187,7 +187,11 @@ def build_zip_from_rows(df, selected_indices):
         for idx in selected_indices:
             row = df.iloc[idx]
             codice, img_bytes = generate_locandina_bytes(row)
-            zf.writestr(f"{codice}.jpg", img_bytes.getvalue())
+            safe_name = re.sub(r'[\\/*?:"<>|]', "", row["descrizione"])
+safe_name = safe_name.replace(" ", "_")
+safe_name = safe_name[:80]
+
+zf.writestr(f"{safe_name}.jpg", img_bytes.getvalue())
 
     zip_buffer.seek(0)
     return zip_buffer

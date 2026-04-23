@@ -267,6 +267,11 @@ if file:
                         })
 
                 if st.button("Genera ZIP locandine"):
+                    st.markdown("---")
+
+                if st.button("Deseleziona articoli"):
+                   reset_selezione(df)
+                   st.rerun()
                     if not selected_rows:
                         st.warning("Seleziona almeno un prodotto.")
                     else:

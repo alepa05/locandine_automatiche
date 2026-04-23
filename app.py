@@ -314,7 +314,7 @@ if file:
                         status_text.text("File pronto per il download.")
 
                 
-                     today = datetime.now().strftime("%d-%m-%Y")
+                    today = datetime.now().strftime("%d-%m-%Y")
                 
                      st.download_button(
                         label="Genera e scarica ZIP",

@@ -290,40 +290,40 @@ if file:
 
                 if selected_rows:
 
-                     righe_finali = []
+                         righe_finali = []
+                        
+                         for item in selected_rows:
+                            row = df.loc[item["index"]].copy()
+                            row["descrizione"] = item["descrizione_modificata"]
+                            righe_finali.append(row)
                     
-                     for item in selected_rows:
-                        row = df.loc[item["index"]].copy()
-                        row["descrizione"] = item["descrizione_modificata"]
-                        righe_finali.append(row)
-                
-                     zprogress_bar = st.progress(0)
-                     status_text = st.empty()
+                         zprogress_bar = st.progress(0)
+                         status_text = st.empty()
+                        
+                    with st.spinner("Generazione locandine in corso..."):
+                            for percent in range(0, 101, 20):
+                                progress_bar.progress(percent)
+                                status_text.text(f"Preparazione file... {percent}%")
+                        
+                            zip_file = build_zip_from_rows(
+                                pd.DataFrame(righe_finali).reset_index(drop=True),
+                                range(len(righe_finali))
+                            )
+                        
+                            progress_bar.progress(100)
+                            status_text.text("File pronto per il download.")
+    
                     
-                with st.spinner("Generazione locandine in corso..."):
-                        for percent in range(0, 101, 20):
-                            progress_bar.progress(percent)
-                            status_text.text(f"Preparazione file... {percent}%")
+                    today = datetime.now().strftime("%d-%m-%Y")
                     
-                        zip_file = build_zip_from_rows(
-                            pd.DataFrame(righe_finali).reset_index(drop=True),
-                            range(len(righe_finali))
-                        )
+                    st.download_button(
+                            label="Genera e scarica ZIP",
+                            data=zip_file,
+                            file_name=f"locandine_{today}.zip",
+                            mime="application/zip",
+                            use_container_width=True
+                         )
                     
-                        progress_bar.progress(100)
-                        status_text.text("File pronto per il download.")
-
-                
-                today = datetime.now().strftime("%d-%m-%Y")
-                
-                st.download_button(
-                        label="Genera e scarica ZIP",
-                        data=zip_file,
-                        file_name=f"locandine_{today}.zip",
-                        mime="application/zip",
-                        use_container_width=True
-                     )
-                
-            else:
+                else:
                     st.warning("Seleziona almeno un prodotto.")
     

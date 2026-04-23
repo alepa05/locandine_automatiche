@@ -19,6 +19,34 @@ IMG_H = 3509
 
 st.set_page_config(page_title="Generatore Locandine", layout="wide")
 st.title("Generatore Locandine")
+st.markdown("""
+<style>
+
+/* scrollbar sempre visibile */
+[data-testid="stVerticalBlock"] div::-webkit-scrollbar {
+    width: 18px;
+}
+
+/* sfondo scrollbar */
+[data-testid="stVerticalBlock"] div::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+/* barra scroll */
+[data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+/* hover */
+[data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 
 def text_size(draw, text, font):

@@ -273,8 +273,4 @@ if st.button("Genera ZIP locandine"):
             file_name="locandine.zip",
             mime="application/zip"
         )
-                            label="Scarica ZIP",
-                            data=zip_file,
-                            file_name="locandine.zip",
-                            mime="application/zip"
-                        )
+        

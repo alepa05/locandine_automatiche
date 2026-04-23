@@ -7,9 +7,6 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
-# =========================================
-# CONFIG
-# =========================================
 TEMPLATE_PATH = "template/template_locandina.jpg"
 
 FONT_DESC = "fonts/Montserrat-ExtraBold.ttf"
@@ -24,9 +21,6 @@ st.set_page_config(page_title="Generatore Locandine", layout="wide")
 st.title("Generatore Locandine")
 
 
-# =========================================
-# FUNZIONI UTILI
-# =========================================
 def text_size(draw, text, font):
     bbox = draw.textbbox((0, 0), text, font=font)
     return bbox[2] - bbox[0], bbox[3] - bbox[1]
@@ -201,9 +195,6 @@ def seleziona_tutto(df):
         st.session_state[f"check_{i}"] = True
 
 
-# =========================================
-# APP STREAMLIT
-# =========================================
 file = st.file_uploader("Carica file Excel", type=["xlsx"])
 st.caption("Carica un file Excel con questa struttura: codice_articolo - descrizione - prezzo - scadenza_offerta")
 
@@ -252,21 +243,22 @@ if file:
 
                 st.subheader("Seleziona prodotti e modifica descrizione")
 
-                for i, row in df_filtered.iterrows():
-                    label = f"{row['codice_articolo']} - {row['descrizione']}"
-                    checked = st.checkbox(label, key=f"check_{i}")
+                with st.container(height=600):
+                    for i, row in df_filtered.iterrows():
+                        label = f"{row['codice_articolo']} - {row['descrizione']}"
+                        checked = st.checkbox(label, key=f"check_{i}")
 
-                    if checked:
-                        nuova_descrizione = st.text_input(
-                            "Modifica descrizione",
-                            value=str(row["descrizione"]),
-                            key=f"desc_{i}"
-                        )
+                        if checked:
+                            nuova_descrizione = st.text_input(
+                                "Modifica descrizione",
+                                value=str(row["descrizione"]),
+                                key=f"desc_{i}"
+                            )
 
-                        selected_rows.append({
-                            "index": i,
-                            "descrizione_modificata": nuova_descrizione
-                        })
+                            selected_rows.append({
+                                "index": i,
+                                "descrizione_modificata": nuova_descrizione
+                            })
 
                 if st.button("Genera ZIP locandine"):
                     if not selected_rows:

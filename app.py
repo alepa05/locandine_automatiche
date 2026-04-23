@@ -270,8 +270,8 @@ if file:
                     st.markdown("---")
 
                 if st.button("Deseleziona articoli"):
-                   reset_selezione(df)
-                   st.rerun()
+                    reset_selezione(df)
+                    st.rerun()
                     if not selected_rows:
                         st.warning("Seleziona almeno un prodotto.")
                     else:

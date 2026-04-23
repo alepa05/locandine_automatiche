@@ -312,6 +312,6 @@ if file:
                         use_container_width=True
                      )
                 
-                     else:
+                    else:
                         st.warning("Seleziona almeno un prodotto.")
 

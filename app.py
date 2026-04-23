@@ -196,7 +196,7 @@ def build_zip_from_rows(df, selected_indices):
 # =========================================
 # APP STREAMLIT
 # =========================================
-file = st.file_uploader("Carica Excel", type=["xlsx"])
+file = st.file_uploader("Carica file Excel", type=["xlsx"])
 
 if file:
     df = pd.read_excel(file, dtype={"codice_articolo": str})

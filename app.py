@@ -290,28 +290,28 @@ if file:
 
                 if selected_rows:
 
- righe_finali = []
-
-    for item in selected_rows:
-        row = df.loc[item["index"]].copy()
-        row["descrizione"] = item["descrizione_modificata"]
-        righe_finali.append(row)
-
-    zip_file = build_zip_from_rows(
-        pd.DataFrame(righe_finali).reset_index(drop=True),
-        range(len(righe_finali))
-    )
-
-    today = datetime.now().strftime("%d-%m-%Y")
-
-    st.download_button(
-        label="Genera e scarica ZIP",
-        data=zip_file,
-        file_name=f"locandine_{today}.zip",
-        mime="application/zip",
-        use_container_width=True
-    )
-
-else:
-    st.warning("Seleziona almeno un prodotto.")
+                     righe_finali = []
+                    
+                        for item in selected_rows:
+                            row = df.loc[item["index"]].copy()
+                            row["descrizione"] = item["descrizione_modificata"]
+                            righe_finali.append(row)
+                    
+                        zip_file = build_zip_from_rows(
+                            pd.DataFrame(righe_finali).reset_index(drop=True),
+                            range(len(righe_finali))
+                        )
+                    
+                        today = datetime.now().strftime("%d-%m-%Y")
+                    
+                        st.download_button(
+                            label="Genera e scarica ZIP",
+                            data=zip_file,
+                            file_name=f"locandine_{today}.zip",
+                            mime="application/zip",
+                            use_container_width=True
+                        )
+                    
+                    else:
+                        st.warning("Seleziona almeno un prodotto.")
 

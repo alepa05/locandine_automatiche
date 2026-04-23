@@ -201,6 +201,16 @@ def build_zip_from_rows(df, selected_indices):
 # =========================================
 # APP STREAMLIT
 # =========================================
+def reset_selezione(df):
+    for i in df.index:
+        check_key = f"check_{i}"
+        desc_key = f"desc_{i}"
+
+        if check_key in st.session_state:
+            st.session_state[check_key] = False
+
+        if desc_key in st.session_state:
+            del st.session_state[desc_key]
 file = st.file_uploader("Carica file Excel", type=["xlsx"])
 st.caption("Carica un file Excel con questa struttura: codice_articolo - descrizione - prezzo - scadenza_offerta")
 
@@ -272,9 +282,13 @@ if file:
                         st.success(f"ZIP creato con {len(righe_finali)} locandine.")
                         today = datetime.now().strftime("%d-%m-%Y")
 
-                        st.download_button(
+                        downloaded = st.download_button(
                         label="Scarica ZIP",
                         data=zip_file,
                         file_name=f"locandine_{today}.zip",
                         mime="application/zip"
-                    )
+                        )
+
+if downloaded:
+    reset_selezione(df)
+    st.rerun()

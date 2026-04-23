@@ -188,7 +188,8 @@ def build_zip_from_rows(df, selected_indices):
         for idx in selected_indices:
             row = df.iloc[idx]
             codice, img_bytes = generate_locandina_bytes(row)
-            safe_name = re.sub(r'[\\/*?:"<>|]', "", row["descrizione"])
+
+            safe_name = re.sub(r'[\\/*?:"<>|]', "", str(row["descrizione"]))
             safe_name = safe_name.replace(" ", "_")
             safe_name = safe_name[:80]
 
@@ -198,9 +199,6 @@ def build_zip_from_rows(df, selected_indices):
     return zip_buffer
 
 
-# =========================================
-# APP STREAMLIT
-# =========================================
 def reset_selezione(df):
     for i in df.index:
         check_key = f"check_{i}"
@@ -211,6 +209,11 @@ def reset_selezione(df):
 
         if desc_key in st.session_state:
             del st.session_state[desc_key]
+
+
+# =========================================
+# APP STREAMLIT
+# =========================================
 file = st.file_uploader("Carica file Excel", type=["xlsx"])
 st.caption("Carica un file Excel con questa struttura: codice_articolo - descrizione - prezzo - scadenza_offerta")
 
@@ -282,14 +285,13 @@ if file:
                         st.success(f"ZIP creato con {len(righe_finali)} locandine.")
                         today = datetime.now().strftime("%d-%m-%Y")
 
-                downloaded = st.download_button(
-                        label="Scarica ZIP",
-                        data=zip_file,
-                        file_name=f"locandine_{today}.zip",
-                        mime="application/zip"
-                )
+                        downloaded = st.download_button(
+                            label="Scarica ZIP",
+                            data=zip_file,
+                            file_name=f"locandine_{today}.zip",
+                            mime="application/zip"
+                        )
 
-                if downloaded:
-                    reset_selezione(df)
-                    st.rerun()
-                     
+                        if downloaded:
+                            reset_selezione(df)
+                            st.rerun()

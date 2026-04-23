@@ -94,7 +94,6 @@ def generate_locandina_bytes(row):
 
     descrizione = str(row["descrizione"]).strip().upper()
 
-    # separa grammatura finale tra parentesi e la stampa sotto senza parentesi
     gram = None
     match = re.search(r"\(([^()]+)\)\s*$", descrizione)
     if match:
@@ -109,9 +108,6 @@ def generate_locandina_bytes(row):
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
 
-    # =========================
-    # DESCRIZIONE
-    # =========================
     lines, font_desc = build_description_lines(draw, descrizione, FONT_DESC)
 
     _, line_height = text_size(draw, "TEST", font_desc)
@@ -128,9 +124,6 @@ def generate_locandina_bytes(row):
     if gram:
         draw_centered(draw, gram, font_desc, start_y, IMG_W, BLACK)
 
-    # =========================
-    # PREZZO CON CENTRO FISSO
-    # =========================
     numero, decimali = prezzo.split(",")
 
     FONT_SIZE = 1200
@@ -155,25 +148,17 @@ def generate_locandina_bytes(row):
     draw.text((comma_x, comma_y), ",", font=font_price, fill=RED)
 
     dec_x = comma_x + comma_gap
-    dec_y = PRICE_Y
-    draw.text((dec_x, dec_y), decimali, font=font_price, fill=RED)
+    draw.text((dec_x, PRICE_Y), decimali, font=font_price, fill=RED)
 
-    # =========================
-    # CODICE
-    # =========================
     code_font = ImageFont.truetype(FONT_CODE, 165)
     code_x = comma_x + 400
     code_y = PRICE_Y + 1080
     draw.text((code_x, code_y), f"COD. {codice}", font=code_font, fill=RED)
 
-    # =========================
-    # FOOTER
-    # =========================
     footer_font = ImageFont.truetype(FONT_FOOTER, 100)
     footer_text = f"OFFERTA VALIDA FINO AL {data}"
     draw_centered(draw, footer_text, footer_font, 3330, IMG_W, WHITE)
 
-    # salva in memoria
     img_bytes = io.BytesIO()
     img.save(img_bytes, format="JPEG", quality=95)
     img_bytes.seek(0)
@@ -211,6 +196,11 @@ def reset_selezione(df):
             del st.session_state[desc_key]
 
 
+def seleziona_tutto(df):
+    for i in df.index:
+        st.session_state[f"check_{i}"] = True
+
+
 # =========================================
 # APP STREAMLIT
 # =========================================
@@ -246,6 +236,18 @@ if file:
             if df_filtered.empty:
                 st.warning("Nessun prodotto trovato con questo codice.")
             else:
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    if st.button("Seleziona tutto"):
+                        seleziona_tutto(df_filtered)
+                        st.rerun()
+
+                with col2:
+                    if st.button("Deseleziona articoli"):
+                        reset_selezione(df)
+                        st.rerun()
+
                 selected_rows = []
 
                 st.subheader("Seleziona prodotti e modifica descrizione")
@@ -267,8 +269,6 @@ if file:
                         })
 
                 if st.button("Genera ZIP locandine"):
-                    st.markdown("---")
-
                     if not selected_rows:
                         st.warning("Seleziona almeno un prodotto.")
                     else:
@@ -287,13 +287,9 @@ if file:
                         st.success(f"ZIP creato con {len(righe_finali)} locandine.")
                         today = datetime.now().strftime("%d-%m-%Y")
 
-                        downloaded = st.download_button(
+                        st.download_button(
                             label="Scarica ZIP",
                             data=zip_file,
                             file_name=f"locandine_{today}.zip",
                             mime="application/zip"
                         )
-
-                        if downloaded:
-                            st.session_state.clear()
-                            st.rerun()

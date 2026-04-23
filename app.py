@@ -5,6 +5,7 @@ import zipfile
 import pandas as pd
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
 
 # =========================================
 # CONFIG
@@ -269,9 +270,11 @@ if file:
                         )
 
                         st.success(f"ZIP creato con {len(righe_finali)} locandine.")
+                        today = datetime.now().strftime("%d-%m-%Y")
+
                         st.download_button(
-                            label="Scarica ZIP",
-                            data=zip_file,
-                            file_name="locandine.zip",
-                            mime="application/zip"
-                        )
+                        label="Scarica ZIP",
+                        data=zip_file,
+                        file_name=f"{today}.zip",
+                        mime="application/zip"
+                    )

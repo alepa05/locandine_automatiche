@@ -191,7 +191,7 @@ def build_zip_from_rows(df, selected_indices):
             safe_name = safe_name.replace(" ", "_")
             safe_name = safe_name[:80]
 
-     zf.writestr(f"{safe_name}.jpg", img_bytes.getvalue())
+            zf.writestr(f"{safe_name}.jpg", img_bytes.getvalue())
 
     zip_buffer.seek(0)
     return zip_buffer

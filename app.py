@@ -300,7 +300,7 @@ if file:
                      zprogress_bar = st.progress(0)
                      status_text = st.empty()
                     
-                    with st.spinner("Generazione locandine in corso..."):
+                with st.spinner("Generazione locandine in corso..."):
                         for percent in range(0, 101, 20):
                             progress_bar.progress(percent)
                             status_text.text(f"Preparazione file... {percent}%")

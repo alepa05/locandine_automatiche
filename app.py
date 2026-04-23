@@ -24,7 +24,7 @@ st.markdown("""
 
 /* scrollbar sempre visibile */
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar {
-    width: 18px;
+    width: 16px;
 }
 
 /* sfondo scrollbar */
@@ -36,7 +36,7 @@ st.markdown("""
 /* barra scroll */
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb {
     background: #888;
-    border-radius: 10px;
+    border-radius: 2px;
 }
 
 /* hover */

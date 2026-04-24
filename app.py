@@ -332,15 +332,15 @@ def build_zip_from_rows(df, selected_indices, status_text=None):
 
 
 def reset_selezione(df):
+    keys_to_remove = []
+
     for i in df.index:
-        check_key = f"check_{i}"
-        desc_key = f"desc_{i}"
+        keys_to_remove.append(f"check_{i}")
+        keys_to_remove.append(f"desc_{i}")
 
-        if check_key in st.session_state:
-            st.session_state[check_key] = False
-
-        if desc_key in st.session_state:
-            del st.session_state[desc_key]
+    for key in keys_to_remove:
+        if key in st.session_state:
+            del st.session_state[key]
 
 
 def seleziona_tutto(df):

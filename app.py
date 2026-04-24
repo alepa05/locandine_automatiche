@@ -499,6 +499,13 @@ if file:
                 with col2:
                     if st.button("Deseleziona articoli", use_container_width=True):
                         reset_selezione(df)
+                    
+                        if "zip_file" in st.session_state:
+                            del st.session_state["zip_file"]
+                    
+                        if "zip_filename" in st.session_state:
+                            del st.session_state["zip_filename"]
+                    
                         st.rerun()
 
                 selected_rows = []

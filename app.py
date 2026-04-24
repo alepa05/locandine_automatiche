@@ -2,10 +2,8 @@ import os
 import re
 import io
 import zipfile
-import base64
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
@@ -357,9 +355,6 @@ def seleziona_tutto(df):
         st.session_state[f"check_{i}"] = True
 
 
-def auto_download_zip(zip_bytes, filename):
-    b64 = base64.b64encode(zip_bytes).decode()
-
     components.html(
         f"""
         <html>
@@ -536,18 +531,18 @@ if file:
 
         with st.container(border=True):
             st.subheader("4. Genera locandine")
+
             st.markdown(
-            f"<p style='font-size:14px;color:gray;'>File selezionati: <b>{len(selected_rows)}</b></p>",
-            unsafe_allow_html=True
-        )
+                f"<p style='font-size:14px;color:gray;'>File selezionati: <b>{len(selected_rows)}</b></p>",
+                unsafe_allow_html=True
+            )
 
             if st.button(
-                "Genera e scarica ZIP locandine",
+                "Genera ZIP locandine",
                 use_container_width=True
             ):
                 if not selected_rows:
                     st.warning("Seleziona almeno un prodotto.")
-
                 else:
                     righe_finali = []
 
@@ -567,6 +562,16 @@ if file:
                     today = datetime.now().strftime("%d-%m-%Y")
                     filename = f"locandine_{today}.zip"
 
-                    status_text.success("File pronto. Download in avvio...")
+                    st.session_state["zip_file"] = zip_file.getvalue()
+                    st.session_state["zip_filename"] = filename
 
-                    auto_download_zip(zip_file.getvalue(), filename)
+                    status_text.success("File generato correttamente.")
+
+            if "zip_file" in st.session_state:
+                st.download_button(
+                    label="Scarica ZIP locandine",
+                    data=st.session_state["zip_file"],
+                    file_name=st.session_state["zip_filename"],
+                    mime="application/zip",
+                    use_container_width=True
+                )

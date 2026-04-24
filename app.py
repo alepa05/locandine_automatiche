@@ -99,11 +99,11 @@ def trova_colonna(df, possibili_nomi):
 
 def sistema_colonne_excel(df):
     if "marchio" in df.columns and "descrizione" in df.columns:
-    df["marchio"] = df["marchio"].fillna("").astype(str).str.strip()
-    df["descrizione"] = (
-        df["marchio"] + " " + df["descrizione"].astype(str)
-    ).str.strip()
-    df.columns = [normalizza_colonna(c) for c in df.columns]
+        df["marchio"] = df["marchio"].fillna("").astype(str).str.strip()
+        df["descrizione"] = (
+            df["marchio"] + " " + df["descrizione"].astype(str)
+        ).str.strip()
+        df.columns = [normalizza_colonna(c) for c in df.columns]
 
     mapping = {
         "marchio": [

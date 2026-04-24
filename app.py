@@ -408,8 +408,11 @@ if file:
                 "codice_articolo, descrizione, prezzo."
             )
 
-            st.write("Colonne trovate nel file:")
-            st.write(list(df.columns))
+            with st.expander("Mostra colonne rilevate"):
+                colonne_pulite = [str(col).replace("_", " ").title() for col in df.columns]
+            
+                for colonna in colonne_pulite:
+                    st.write(f"• {colonna}")
 
     else:
         with st.container(border=True):

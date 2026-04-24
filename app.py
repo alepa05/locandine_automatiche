@@ -311,6 +311,7 @@ def generate_locandina_bytes(row):
 def build_zip_from_rows(df, selected_indices, status_text=None):
     zip_buffer = io.BytesIO()
     total = len(selected_indices)
+    used_names = {}
 
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for count, idx in enumerate(selected_indices, start=1):
@@ -321,7 +322,16 @@ def build_zip_from_rows(df, selected_indices, status_text=None):
             safe_name = safe_name.replace(" ", "_")
             safe_name = safe_name[:80]
 
-            zf.writestr(f"{safe_name}.jpg", img_bytes.getvalue())
+                        base_filename = safe_name
+            filename = f"{base_filename}.jpg"
+            
+            if filename in used_names:
+                used_names[filename] += 1
+                filename = f"{base_filename}_{used_names[filename]}.jpg"
+            else:
+                used_names[filename] = 1
+            
+            zf.writestr(filename, img_bytes.getvalue())
 
             if status_text is not None:
                 percent = int((count / total) * 100)

@@ -328,30 +328,63 @@ st.caption(
 if file:
     df = leggi_excel_auto(file)
 
-    required = [
+    required_base = [
         "codice_articolo",
         "descrizione",
-        "prezzo",
-        "scadenza_offerta"
+        "prezzo"
     ]
 
-    missing = [c for c in required if c not in df.columns]
+    missing_base = [c for c in required_base if c not in df.columns]
 
-    if missing:
+    if missing_base:
         st.error(
             "Non riesco a riconoscere queste colonne obbligatorie: "
-            + ", ".join(missing)
+            + ", ".join(missing_base)
         )
 
         st.info(
             "Rinomina le colonne del file Excel oppure usa nomi simili a: "
-            "codice_articolo, descrizione, prezzo, scadenza_offerta."
+            "codice_articolo, descrizione, prezzo."
         )
 
         st.write("Colonne trovate nel file:")
         st.write(list(df.columns))
 
     else:
+        if "scadenza_offerta" not in df.columns:
+            st.info("Inserisci la scadenza del volantino.")
+
+            mesi_select = [
+                "GENNAIO", "FEBBRAIO", "MARZO", "APRILE",
+                "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO",
+                "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"
+            ]
+
+            col_giorno, col_mese = st.columns(2)
+
+            with col_giorno:
+                giorno_scadenza = st.selectbox(
+                    "Giorno",
+                    list(range(1, 32)),
+                    index=0
+                )
+
+            with col_mese:
+                mese_scadenza = st.selectbox(
+                    "Mese",
+                    mesi_select,
+                    index=0
+                )
+
+            df["scadenza_offerta"] = f"{giorno_scadenza} {mese_scadenza}"
+
+        required = [
+            "codice_articolo",
+            "descrizione",
+            "prezzo",
+            "scadenza_offerta"
+        ]
+
         df = df[required].copy()
 
         df = df.dropna(

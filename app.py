@@ -554,6 +554,10 @@ if file:
                     today = datetime.now().strftime("%d-%m-%Y")
                     filename = f"locandine_{today}.zip"
 
-                    status_text.success("File pronto.")
+                    status_text.success("File generato correttamente.")
 
                     auto_download_zip(zip_file.getvalue(), filename)
+                    
+                    reset_selezione(df)
+                    
+                    st.rerun()

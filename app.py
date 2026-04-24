@@ -31,17 +31,14 @@ st.markdown("""
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar {
     width: 16px;
 }
-
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 10px;
 }
-
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 2px;
 }
-
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
@@ -90,43 +87,20 @@ def sistema_colonne_excel(df):
 
     mapping = {
         "codice_articolo": [
-            "codice_articolo",
-            "codice",
-            "cod_articolo",
-            "cod_art",
-            "codice_prodotto",
-            "codiceprodotto",
-            "articolo",
-            "sku",
-            "ean"
+            "codice_articolo", "codice", "cod_articolo", "cod_art",
+            "codice_prodotto", "codiceprodotto", "articolo", "sku", "ean", "cod"
         ],
         "descrizione": [
-            "descrizione",
-            "desc",
-            "descrizione_articolo",
-            "nome",
-            "nome_prodotto",
-            "prodotto",
-            "articolo_descrizione"
+            "descrizione", "desc", "descrizione_articolo", "nome",
+            "nome_prodotto", "prodotto", "articolo_descrizione"
         ],
         "prezzo": [
-            "prezzo",
-            "price",
-            "prezzo_offerta",
-            "prezzo_vendita",
-            "offerta",
-            "prezzo_promo",
-            "promo"
+            "prezzo", "price", "prezzo_offerta", "prezzo_vendita",
+            "offerta", "prezzo_promo", "promo"
         ],
         "scadenza_offerta": [
-            "scadenza_offerta",
-            "scadenza",
-            "data_scadenza",
-            "valido_fino",
-            "validita",
-            "fine_offerta",
-            "data_fine",
-            "fino_al"
+            "scadenza_offerta", "scadenza", "data_scadenza",
+            "valido_fino", "validita", "fine_offerta", "data_fine", "fino_al"
         ]
     }
 
@@ -137,14 +111,46 @@ def sistema_colonne_excel(df):
         if trovata:
             nuove_colonne[trovata] = colonna_standard
 
-    df = df.rename(columns=nuove_colonne)
+    return df.rename(columns=nuove_colonne)
+
+
+def leggi_excel_auto(file):
+    excel_preview = pd.read_excel(file, header=None, dtype=str)
+
+    header_row = 0
+
+    for i in range(min(20, len(excel_preview))):
+        row_values = (
+            excel_preview.iloc[i]
+            .fillna("")
+            .astype(str)
+            .str.lower()
+            .tolist()
+        )
+
+        row_text = " ".join(row_values)
+
+        if (
+            "cod" in row_text
+            or "descr" in row_text
+            or "prezzo" in row_text
+            or "scadenza" in row_text
+            or "valido" in row_text
+        ):
+            header_row = i
+            break
+
+    file.seek(0)
+
+    df = pd.read_excel(file, dtype=str, header=header_row)
+    df = sistema_colonne_excel(df)
 
     return df
 
 
 def format_price(value):
     try:
-        return f"{float(value):.2f}".replace(".", ",")
+        return f"{float(str(value).replace(',', '.')):.2f}".replace(".", ",")
     except Exception:
         return str(value).replace(".", ",")
 
@@ -153,18 +159,9 @@ def format_date_it(value):
     parsed = pd.to_datetime(value, errors="coerce", dayfirst=True)
 
     mesi = {
-        1: "GENNAIO",
-        2: "FEBBRAIO",
-        3: "MARZO",
-        4: "APRILE",
-        5: "MAGGIO",
-        6: "GIUGNO",
-        7: "LUGLIO",
-        8: "AGOSTO",
-        9: "SETTEMBRE",
-        10: "OTTOBRE",
-        11: "NOVEMBRE",
-        12: "DICEMBRE"
+        1: "GENNAIO", 2: "FEBBRAIO", 3: "MARZO", 4: "APRILE",
+        5: "MAGGIO", 6: "GIUGNO", 7: "LUGLIO", 8: "AGOSTO",
+        9: "SETTEMBRE", 10: "OTTOBRE", 11: "NOVEMBRE", 12: "DICEMBRE"
     }
 
     if pd.notna(parsed):
@@ -329,8 +326,7 @@ st.caption(
 )
 
 if file:
-    df = pd.read_excel(file, dtype=str)
-    df = sistema_colonne_excel(df)
+    df = leggi_excel_auto(file)
 
     required = [
         "codice_articolo",
@@ -356,10 +352,18 @@ if file:
         st.write(list(df.columns))
 
     else:
+        df = df[required].copy()
+
+        df = df.dropna(
+            subset=["codice_articolo", "descrizione", "prezzo"],
+            how="all"
+        )
+
         df["codice_articolo"] = (
             df["codice_articolo"]
             .astype(str)
             .str.strip()
+            .str.replace(".0", "", regex=False)
             .str.zfill(7)
         )
 
@@ -375,10 +379,7 @@ if file:
 
             if search_code:
                 df_filtered = df[
-                    df["codice_articolo"].str.contains(
-                        search_code,
-                        na=False
-                    )
+                    df["codice_articolo"].str.contains(search_code, na=False)
                 ]
             else:
                 df_filtered = df
@@ -410,10 +411,7 @@ if file:
                             f"{row['descrizione']}"
                         )
 
-                        checked = st.checkbox(
-                            label,
-                            key=f"check_{i}"
-                        )
+                        checked = st.checkbox(label, key=f"check_{i}")
 
                         if checked:
                             nuova_descrizione = st.text_input(

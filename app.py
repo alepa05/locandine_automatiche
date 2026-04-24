@@ -20,12 +20,6 @@ IMG_H = 3509
 st.set_page_config(page_title="Generatore Locandine", layout="wide")
 st.title("Generatore Locandine")
 
-if "zip_file" not in st.session_state:
-    st.session_state.zip_file = None
-
-if "zip_filename" not in st.session_state:
-    st.session_state.zip_filename = None
-
 st.markdown("""
 <style>
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar {
@@ -60,9 +54,7 @@ def draw_centered(draw, text, font, y, image_width, fill="black"):
 
 def normalizza_colonna(nome):
     nome = str(nome).lower().strip()
-    nome = nome.replace(" ", "_")
-    nome = nome.replace("-", "_")
-    nome = nome.replace(".", "_")
+    nome = nome.replace(" ", "_").replace("-", "_").replace(".", "_")
     nome = re.sub(r"_+", "_", nome)
     return nome
 
@@ -352,29 +344,32 @@ if file:
 
     else:
         if "scadenza_offerta" not in df.columns:
-            st.info("Inserisci la scadenza del volantino.")
+            left_date, center_date, right_date = st.columns([1.5, 2, 1.5])
 
-            mesi_select = [
-                "GENNAIO", "FEBBRAIO", "MARZO", "APRILE",
-                "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO",
-                "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"
-            ]
+            with center_date:
+                st.info("Inserisci la scadenza del volantino.")
 
-            col_giorno, col_mese = st.columns(2)
+                mesi_select = [
+                    "GENNAIO", "FEBBRAIO", "MARZO", "APRILE",
+                    "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO",
+                    "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"
+                ]
 
-            with col_giorno:
-                giorno_scadenza = st.selectbox(
-                    "Giorno",
-                    list(range(1, 32)),
-                    index=0
-                )
+                col_giorno, col_mese = st.columns(2)
 
-            with col_mese:
-                mese_scadenza = st.selectbox(
-                    "Mese",
-                    mesi_select,
-                    index=0
-                )
+                with col_giorno:
+                    giorno_scadenza = st.selectbox(
+                        "Giorno",
+                        list(range(1, 32)),
+                        index=0
+                    )
+
+                with col_mese:
+                    mese_scadenza = st.selectbox(
+                        "Mese",
+                        mesi_select,
+                        index=0
+                    )
 
             df["scadenza_offerta"] = f"{giorno_scadenza} {mese_scadenza}"
 
@@ -444,7 +439,10 @@ if file:
                             f"{row['descrizione']}"
                         )
 
-                        checked = st.checkbox(label, key=f"check_{i}")
+                        checked = st.checkbox(
+                            label,
+                            key=f"check_{i}"
+                        )
 
                         if checked:
                             nuova_descrizione = st.text_input(
@@ -458,41 +456,33 @@ if file:
                                 "descrizione_modificata": nuova_descrizione
                             })
 
-                if st.button(
-                    "Genera ZIP locandine",
-                    use_container_width=True
-                ):
-                    if not selected_rows:
-                        st.warning("Seleziona almeno un prodotto.")
+                if selected_rows:
+                    righe_finali = []
 
-                    else:
-                        righe_finali = []
+                    for item in selected_rows:
+                        row = df.loc[item["index"]].copy()
+                        row["descrizione"] = item["descrizione_modificata"]
+                        righe_finali.append(row)
 
-                        for item in selected_rows:
-                            row = df.loc[item["index"]].copy()
-                            row["descrizione"] = item["descrizione_modificata"]
-                            righe_finali.append(row)
+                    status_text = st.empty()
 
-                        status_text = st.empty()
+                    zip_file = build_zip_from_rows(
+                        pd.DataFrame(righe_finali).reset_index(drop=True),
+                        range(len(righe_finali)),
+                        status_text=status_text
+                    )
 
-                        zip_file = build_zip_from_rows(
-                            pd.DataFrame(righe_finali).reset_index(drop=True),
-                            range(len(righe_finali)),
-                            status_text=status_text
-                        )
+                    today = datetime.now().strftime("%d-%m-%Y")
 
-                        today = datetime.now().strftime("%d-%m-%Y")
+                    status_text.success("File pronto per il download.")
 
-                        st.session_state.zip_file = zip_file.getvalue()
-                        st.session_state.zip_filename = f"locandine_{today}.zip"
-
-                        status_text.success("File pronto per il download.")
-
-                if st.session_state.zip_file is not None:
                     st.download_button(
-                        label="Scarica ZIP",
-                        data=st.session_state.zip_file,
-                        file_name=st.session_state.zip_filename,
+                        label="Genera e scarica ZIP locandine",
+                        data=zip_file,
+                        file_name=f"locandine_{today}.zip",
                         mime="application/zip",
                         use_container_width=True
                     )
+
+                else:
+                    st.warning("Seleziona almeno un prodotto.")

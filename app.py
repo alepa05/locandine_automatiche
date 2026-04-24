@@ -2,8 +2,10 @@ import os
 import re
 import io
 import zipfile
+import base64
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
@@ -162,6 +164,28 @@ def format_date_it(value):
     return str(value).strip().upper()
 
 
+def separa_descrizione_grammatura(descrizione):
+    descrizione = str(descrizione).strip().upper()
+
+    # Caso classico finale tra parentesi: (330 G), (1 KG), (80 G X 2), ecc.
+    match = re.search(r"\(([^()]+)\)\s*$", descrizione)
+    if match:
+        gram = match.group(1).strip()
+        desc = descrizione[:match.start()].strip()
+        return desc, gram
+
+    # Casi finali senza parentesi: 5 KG, 1 LT, 500 ML, 50 PZ, AL KG, AL LT, ecc.
+    pattern = r"\b((?:AL\s+)?(?:KG|G|GR|LT|L|ML|CL|PZ|PEZZI|CONF|CF|X\s*\d+|[0-9]+(?:[,.][0-9]+)?\s*(?:KG|G|GR|LT|L|ML|CL|PZ|PEZZI|CONF|CF)(?:\s*X\s*\d+)?|[0-9]+/[0-9]+\s*(?:KG|G|GR|LT|L|ML|CL)))$"
+
+    match = re.search(pattern, descrizione)
+    if match:
+        gram = match.group(1).strip()
+        desc = descrizione[:match.start()].strip()
+        return desc, gram
+
+    return descrizione, None
+
+
 def build_description_lines(draw, descrizione, font_path):
     MAX_WIDTH = 1800
     MAX_LINES = 3
@@ -194,14 +218,8 @@ def generate_locandina_bytes(row):
     img = Image.open(TEMPLATE_PATH).convert("RGB")
     draw = ImageDraw.Draw(img)
 
-    descrizione = str(row["descrizione"]).strip().upper()
-
-    gram = None
-    match = re.search(r"\(([^()]+)\)\s*$", descrizione)
-
-    if match:
-        gram = match.group(1).strip()
-        descrizione = descrizione[:match.start()].strip()
+    descrizione_originale = str(row["descrizione"]).strip().upper()
+    descrizione, gram = separa_descrizione_grammatura(descrizione_originale)
 
     prezzo = format_price(row["prezzo"])
     codice = str(row["codice_articolo"]).strip().zfill(7)
@@ -307,6 +325,28 @@ def reset_selezione(df):
 def seleziona_tutto(df):
     for i in df.index:
         st.session_state[f"check_{i}"] = True
+
+
+def auto_download_zip(zip_bytes, filename):
+    b64 = base64.b64encode(zip_bytes).decode()
+
+    components.html(
+        f"""
+        <html>
+            <body>
+                <script>
+                    const link = document.createElement('a');
+                    link.href = "data:application/zip;base64,{b64}";
+                    link.download = "{filename}";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                </script>
+            </body>
+        </html>
+        """,
+        height=0
+    )
 
 
 file = st.file_uploader("Carica file Excel", type=["xlsx"])
@@ -456,33 +496,32 @@ if file:
                                 "descrizione_modificata": nuova_descrizione
                             })
 
-                if selected_rows:
-                    righe_finali = []
+                if st.button(
+                    "Genera e scarica ZIP locandine",
+                    use_container_width=True
+                ):
+                    if not selected_rows:
+                        st.warning("Seleziona almeno un prodotto.")
 
-                    for item in selected_rows:
-                        row = df.loc[item["index"]].copy()
-                        row["descrizione"] = item["descrizione_modificata"]
-                        righe_finali.append(row)
+                    else:
+                        righe_finali = []
 
-                    status_text = st.empty()
+                        for item in selected_rows:
+                            row = df.loc[item["index"]].copy()
+                            row["descrizione"] = item["descrizione_modificata"]
+                            righe_finali.append(row)
 
-                    zip_file = build_zip_from_rows(
-                        pd.DataFrame(righe_finali).reset_index(drop=True),
-                        range(len(righe_finali)),
-                        status_text=status_text
-                    )
+                        status_text = st.empty()
 
-                    today = datetime.now().strftime("%d-%m-%Y")
+                        zip_file = build_zip_from_rows(
+                            pd.DataFrame(righe_finali).reset_index(drop=True),
+                            range(len(righe_finali)),
+                            status_text=status_text
+                        )
 
-                    status_text.success("File pronto per il download.")
+                        today = datetime.now().strftime("%d-%m-%Y")
+                        filename = f"locandine_{today}.zip"
 
-                    st.download_button(
-                        label="Genera e scarica ZIP locandine",
-                        data=zip_file,
-                        file_name=f"locandine_{today}.zip",
-                        mime="application/zip",
-                        use_container_width=True
-                    )
+                        status_text.success("File pronto. Download in avvio...")
 
-                else:
-                    st.warning("Seleziona almeno un prodotto.")
+                        auto_download_zip(zip_file.getvalue(), filename)

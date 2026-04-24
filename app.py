@@ -527,6 +527,10 @@ if file:
 
         with st.container(border=True):
             st.subheader("4. Genera locandine")
+            st.markdown(
+            f"<p style='font-size:14px;color:gray;'>File selezionati: <b>{len(selected_rows)}</b></p>",
+            unsafe_allow_html=True
+        )
 
             if st.button(
                 "Genera e scarica ZIP locandine",

@@ -377,8 +377,7 @@ with st.container(border=True):
 
     st.caption(
         "Carica un file Excel contenente almeno queste informazioni: "
-        "codice articolo, descrizione, prezzo e scadenza offerta. "
-        "Le colonne possono avere anche nomi diversi: il programma proverà a riconoscerle automaticamente."
+        "codice articolo, descrizione, e prezzo. "
     )
 
 

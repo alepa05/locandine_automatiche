@@ -415,7 +415,7 @@ if file:
                 left_date, center_date, right_date = st.columns([1, 2, 1])
 
                 with center_date:
-                    st.info("Inserisci la scadenza del volantino.")
+                    st.info("Inserisci la data di scadenza del volantino.")
 
                     mesi_select = [
                         "GENNAIO", "FEBBRAIO", "MARZO", "APRILE",

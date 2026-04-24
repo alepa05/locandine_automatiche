@@ -322,15 +322,15 @@ def build_zip_from_rows(df, selected_indices, status_text=None):
             safe_name = safe_name.replace(" ", "_")
             safe_name = safe_name[:80]
 
-                        base_filename = safe_name
+            base_filename = safe_name
             filename = f"{base_filename}.jpg"
-            
+
             if filename in used_names:
                 used_names[filename] += 1
                 filename = f"{base_filename}_{used_names[filename]}.jpg"
             else:
                 used_names[filename] = 1
-            
+
             zf.writestr(filename, img_bytes.getvalue())
 
             if status_text is not None:
@@ -339,7 +339,6 @@ def build_zip_from_rows(df, selected_indices, status_text=None):
 
     zip_buffer.seek(0)
     return zip_buffer
-
 
 def reset_selezione(df):
     for i in df.index:

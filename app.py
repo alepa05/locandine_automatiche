@@ -24,17 +24,40 @@ st.title("Generatore Locandine")
 
 st.markdown("""
 <style>
+.block-container {
+    max-width: 1150px;
+    padding-top: 2rem;
+}
+
+div[data-testid="stVerticalBlock"] {
+    gap: 1.1rem;
+}
+
+.stButton button {
+    border-radius: 8px;
+    height: 42px;
+}
+
+.stDownloadButton button {
+    border-radius: 8px;
+    height: 48px;
+    font-weight: 700;
+}
+
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar {
     width: 16px;
 }
+
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 10px;
 }
+
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 2px;
 }
+
 [data-testid="stVerticalBlock"] div::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
@@ -167,14 +190,12 @@ def format_date_it(value):
 def separa_descrizione_grammatura(descrizione):
     descrizione = str(descrizione).strip().upper()
 
-    # Caso classico finale tra parentesi: (330 G), (1 KG), (80 G X 2), ecc.
     match = re.search(r"\(([^()]+)\)\s*$", descrizione)
     if match:
         gram = match.group(1).strip()
         desc = descrizione[:match.start()].strip()
         return desc, gram
 
-    # Casi finali senza parentesi: 5 KG, 1 LT, 500 ML, 50 PZ, AL KG, AL LT, ecc.
     pattern = r"\b((?:AL\s+)?(?:KG|G|GR|LT|L|ML|CL|PZ|PEZZI|CONF|CF|X\s*\d+|[0-9]+(?:[,.][0-9]+)?\s*(?:KG|G|GR|LT|L|ML|CL|PZ|PEZZI|CONF|CF)(?:\s*X\s*\d+)?|[0-9]+/[0-9]+\s*(?:KG|G|GR|LT|L|ML|CL)))$"
 
     match = re.search(pattern, descrizione)
@@ -349,12 +370,17 @@ def auto_download_zip(zip_bytes, filename):
     )
 
 
-file = st.file_uploader("Carica file Excel", type=["xlsx"])
+with st.container(border=True):
+    st.subheader("1. Carica file Excel")
 
-st.caption(
-    "Carica un file Excel contenente almeno queste informazioni: "
-    "codice articolo, descrizione, e prezzo. "
-   )
+    file = st.file_uploader("Carica file Excel", type=["xlsx"])
+
+    st.caption(
+        "Carica un file Excel contenente almeno queste informazioni: "
+        "codice articolo, descrizione, prezzo e scadenza offerta. "
+        "Le colonne possono avere anche nomi diversi: il programma proverà a riconoscerle automaticamente."
+    )
+
 
 if file:
     df = leggi_excel_auto(file)
@@ -368,49 +394,56 @@ if file:
     missing_base = [c for c in required_base if c not in df.columns]
 
     if missing_base:
-        st.error(
-            "Non riesco a riconoscere queste colonne obbligatorie: "
-            + ", ".join(missing_base)
-        )
+        with st.container(border=True):
+            st.error(
+                "Non riesco a riconoscere queste colonne obbligatorie: "
+                + ", ".join(missing_base)
+            )
 
-        st.info(
-            "Rinomina le colonne del file Excel oppure usa nomi simili a: "
-            "codice_articolo, descrizione, prezzo."
-        )
+            st.info(
+                "Rinomina le colonne del file Excel oppure usa nomi simili a: "
+                "codice_articolo, descrizione, prezzo."
+            )
 
-        st.write("Colonne trovate nel file:")
-        st.write(list(df.columns))
+            st.write("Colonne trovate nel file:")
+            st.write(list(df.columns))
 
     else:
-        if "scadenza_offerta" not in df.columns:
-            left_date, center_date, right_date = st.columns([1.5, 2, 1.5])
+        with st.container(border=True):
+            st.subheader("2. Scadenza volantino")
 
-            with center_date:
-                st.info("Inserisci la scadenza del volantino.")
+            if "scadenza_offerta" not in df.columns:
+                left_date, center_date, right_date = st.columns([1, 2, 1])
 
-                mesi_select = [
-                    "GENNAIO", "FEBBRAIO", "MARZO", "APRILE",
-                    "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO",
-                    "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"
-                ]
+                with center_date:
+                    st.info("Inserisci la scadenza del volantino.")
 
-                col_giorno, col_mese = st.columns(2)
+                    mesi_select = [
+                        "GENNAIO", "FEBBRAIO", "MARZO", "APRILE",
+                        "MAGGIO", "GIUGNO", "LUGLIO", "AGOSTO",
+                        "SETTEMBRE", "OTTOBRE", "NOVEMBRE", "DICEMBRE"
+                    ]
 
-                with col_giorno:
-                    giorno_scadenza = st.selectbox(
-                        "Giorno",
-                        list(range(1, 32)),
-                        index=0
-                    )
+                    col_giorno, col_mese = st.columns(2)
 
-                with col_mese:
-                    mese_scadenza = st.selectbox(
-                        "Mese",
-                        mesi_select,
-                        index=0
-                    )
+                    with col_giorno:
+                        giorno_scadenza = st.selectbox(
+                            "Giorno",
+                            list(range(1, 32)),
+                            index=0
+                        )
 
-            df["scadenza_offerta"] = f"{giorno_scadenza} {mese_scadenza}"
+                    with col_mese:
+                        mese_scadenza = st.selectbox(
+                            "Mese",
+                            mesi_select,
+                            index=0
+                        )
+
+                df["scadenza_offerta"] = f"{giorno_scadenza} {mese_scadenza}"
+
+            else:
+                st.success("Scadenza offerta rilevata automaticamente dal file.")
 
         required = [
             "codice_articolo",
@@ -434,10 +467,8 @@ if file:
             .str.zfill(7)
         )
 
-        left, center, right = st.columns([1, 2, 1])
-
-        with center:
-            st.subheader("Seleziona prodotti")
+        with st.container(border=True):
+            st.subheader("3. Ricerca e selezione prodotti")
 
             search_code = st.text_input(
                 "Cerca prodotto per codice",
@@ -458,18 +489,18 @@ if file:
                 col1, col2 = st.columns(2)
 
                 with col1:
-                    if st.button("Seleziona tutto"):
+                    if st.button("Seleziona tutto", use_container_width=True):
                         seleziona_tutto(df_filtered)
                         st.rerun()
 
                 with col2:
-                    if st.button("Deseleziona articoli"):
+                    if st.button("Deseleziona articoli", use_container_width=True):
                         reset_selezione(df)
                         st.rerun()
 
                 selected_rows = []
 
-                st.subheader("Seleziona prodotti e modifica descrizione")
+                st.markdown("### Seleziona prodotti e modifica descrizione")
 
                 with st.container(height=600):
                     for i, row in df_filtered.iterrows():
@@ -495,32 +526,35 @@ if file:
                                 "descrizione_modificata": nuova_descrizione
                             })
 
-                if st.button(
-                    "Genera e scarica ZIP locandine",
-                    use_container_width=True
-                ):
-                    if not selected_rows:
-                        st.warning("Seleziona almeno un prodotto.")
+        with st.container(border=True):
+            st.subheader("4. Genera locandine")
 
-                    else:
-                        righe_finali = []
+            if st.button(
+                "Genera e scarica ZIP locandine",
+                use_container_width=True
+            ):
+                if not selected_rows:
+                    st.warning("Seleziona almeno un prodotto.")
 
-                        for item in selected_rows:
-                            row = df.loc[item["index"]].copy()
-                            row["descrizione"] = item["descrizione_modificata"]
-                            righe_finali.append(row)
+                else:
+                    righe_finali = []
 
-                        status_text = st.empty()
+                    for item in selected_rows:
+                        row = df.loc[item["index"]].copy()
+                        row["descrizione"] = item["descrizione_modificata"]
+                        righe_finali.append(row)
 
-                        zip_file = build_zip_from_rows(
-                            pd.DataFrame(righe_finali).reset_index(drop=True),
-                            range(len(righe_finali)),
-                            status_text=status_text
-                        )
+                    status_text = st.empty()
 
-                        today = datetime.now().strftime("%d-%m-%Y")
-                        filename = f"locandine_{today}.zip"
+                    zip_file = build_zip_from_rows(
+                        pd.DataFrame(righe_finali).reset_index(drop=True),
+                        range(len(righe_finali)),
+                        status_text=status_text
+                    )
 
-                        status_text.success("File pronto. Download in avvio...")
+                    today = datetime.now().strftime("%d-%m-%Y")
+                    filename = f"locandine_{today}.zip"
 
-                        auto_download_zip(zip_file.getvalue(), filename)
+                    status_text.success("File pronto. Download in avvio...")
+
+                    auto_download_zip(zip_file.getvalue(), filename)

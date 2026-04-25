@@ -208,7 +208,7 @@ def separa_descrizione_grammatura(descrizione):
 def build_description_lines(draw, descrizione, font_path):
     MAX_WIDTH = 1800
     MAX_LINES = 3
-    FONT_SIZE_DESC = 125
+    FONT_SIZE_DESC = 140
 
     words = descrizione.split()
     font_desc = ImageFont.truetype(font_path, FONT_SIZE_DESC)

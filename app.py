@@ -10,7 +10,7 @@ from datetime import datetime
 TEMPLATE_PATH = "template/template_locandina.jpg"
 
 FONT_DESC = "fonts/Montserrat-ExtraBold.ttf"
-FONT_PRICE = "fonts/Cocogoose-Pro-Regular-trial.ttf"
+FONT_PRICE = "fonts/BebasNeue-Regular.ttf"
 FONT_CODE = "fonts/Oswald-Light.ttf"
 FONT_FOOTER = "fonts/Montserrat-Bold.ttf"
 

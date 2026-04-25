@@ -284,7 +284,7 @@ def generate_locandina_bytes(row):
     draw.text((start_x, PRICE_Y), numero, font=font_price, fill=RED)
 
     comma_x = start_x + num_w - comma_overlap
-    comma_y = PRICE_Y + 30
+    comma_y = PRICE_Y + 20
     draw.text((comma_x, comma_y), ",", font=font_price, fill=RED)
 
     dec_x = comma_x + comma_gap
@@ -292,7 +292,7 @@ def generate_locandina_bytes(row):
 
     code_font = ImageFont.truetype(FONT_CODE, 165)
     code_x = comma_x + 400
-    code_y = PRICE_Y + 1080
+    code_y = PRICE_Y + 900
     draw.text((code_x, code_y), f"COD. {codice}", font=code_font, fill=RED)
 
     footer_font = ImageFont.truetype(FONT_FOOTER, 100)

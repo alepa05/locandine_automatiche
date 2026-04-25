@@ -268,7 +268,7 @@ def generate_locandina_bytes(row):
 
     FONT_SIZE = 1200
     PRICE_CENTER_X = 1235
-    PRICE_Y = 2050
+    PRICE_Y = 2200
 
     font_price = ImageFont.truetype(FONT_PRICE, FONT_SIZE)
 

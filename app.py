@@ -292,7 +292,7 @@ def generate_locandina_bytes(row):
 
     code_font = ImageFont.truetype(FONT_CODE, 165)
     code_x = comma_x + 400
-    code_y = PRICE_Y + 950
+    code_y = PRICE_Y + 925
     draw.text((code_x, code_y), f"COD. {codice}", font=code_font, fill=RED)
 
     footer_font = ImageFont.truetype(FONT_FOOTER, 100)

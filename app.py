@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
 TEMPLATE_PATH = "template/template_locandina.jpg"
+TEMPLATE_NO_OFFER_PATH = "template/template_locandina_no_offerta.jpg"
 
 FONT_DESC = "fonts/Montserrat-ExtraBold.ttf"
 FONT_PRICE = "fonts/CaricoNumbers-Replica-Regular.ttf"
@@ -233,6 +234,12 @@ def build_description_lines(draw, descrizione, font_path):
     return lines[:MAX_LINES], font_desc
 
 
+def safe_filename(name):
+    safe_name = re.sub(r'[\\/*?:"<>|]', "", str(name))
+    safe_name = safe_name.replace(" ", "_")
+    return safe_name[:80]
+
+
 def generate_locandina_bytes(row):
     img = Image.open(TEMPLATE_PATH).convert("RGB")
     draw = ImageDraw.Draw(img)
@@ -306,7 +313,72 @@ def generate_locandina_bytes(row):
     return codice, img_bytes
 
 
-def build_zip_from_rows(df, selected_indices, status_text=None):
+def generate_locandina_manuale_bytes(row):
+    img = Image.open(TEMPLATE_NO_OFFER_PATH).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    descrizione_originale = str(row["descrizione"]).strip().upper()
+    descrizione, gram = separa_descrizione_grammatura(descrizione_originale)
+
+    prezzo = format_price(row["prezzo"])
+    codice = str(row["codice_articolo"]).strip().zfill(7)
+
+    BLACK = (0, 0, 0)
+
+    lines, font_desc = build_description_lines(draw, descrizione, FONT_DESC)
+
+    _, line_height = text_size(draw, "TEST", font_desc)
+    line_spacing = 40
+
+    total_lines = len(lines) + (1 if gram else 0)
+    total_height = total_lines * line_height + (total_lines - 1) * line_spacing
+    start_y = 1650 - total_height // 2
+
+    for line in lines:
+        draw_centered(draw, line, font_desc, start_y, IMG_W, BLACK)
+        start_y += line_height + line_spacing
+
+    if gram:
+        draw_centered(draw, gram, font_desc, start_y, IMG_W, BLACK)
+
+    numero, decimali = prezzo.split(",")
+
+    FONT_SIZE = 1200
+    PRICE_CENTER_X = 1235
+    PRICE_Y = 2050
+
+    font_price = ImageFont.truetype(FONT_PRICE, FONT_SIZE)
+
+    num_w, _ = text_size(draw, numero, font_price)
+    dec_w, _ = text_size(draw, decimali, font_price)
+
+    comma_overlap = 30
+    comma_gap = 250
+
+    total_w = (num_w - comma_overlap) + comma_gap + dec_w
+    start_x = PRICE_CENTER_X - (total_w // 2)
+
+    draw.text((start_x, PRICE_Y), numero, font=font_price, fill=BLACK)
+
+    comma_x = start_x + num_w - comma_overlap
+    comma_y = PRICE_Y + 10
+    draw.text((comma_x, comma_y), ",", font=font_price, fill=BLACK)
+
+    dec_x = comma_x + comma_gap
+    draw.text((dec_x, PRICE_Y), decimali, font=font_price, fill=BLACK)
+
+    code_font = ImageFont.truetype(FONT_CODE, 120)
+    code_text = f"COD. {codice}"
+    draw_centered(draw, code_text, code_font, 3330, IMG_W, BLACK)
+
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format="JPEG", quality=95)
+    img_bytes.seek(0)
+
+    return codice, img_bytes
+
+
+def build_zip_from_rows(df, selected_indices, status_text=None, manuale=False):
     zip_buffer = io.BytesIO()
     total = len(selected_indices)
     used_names = {}
@@ -314,13 +386,13 @@ def build_zip_from_rows(df, selected_indices, status_text=None):
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for count, idx in enumerate(selected_indices, start=1):
             row = df.iloc[idx]
-            codice, img_bytes = generate_locandina_bytes(row)
 
-            safe_name = re.sub(r'[\\/*?:"<>|]', "", str(row["descrizione"]))
-            safe_name = safe_name.replace(" ", "_")
-            safe_name = safe_name[:80]
+            if manuale:
+                codice, img_bytes = generate_locandina_manuale_bytes(row)
+            else:
+                codice, img_bytes = generate_locandina_bytes(row)
 
-            base_filename = safe_name
+            base_filename = safe_filename(row["descrizione"])
             filename = f"{base_filename}.jpg"
 
             if filename in used_names:
@@ -337,6 +409,7 @@ def build_zip_from_rows(df, selected_indices, status_text=None):
 
     zip_buffer.seek(0)
     return zip_buffer
+
 
 def reset_selezione(df):
     for i in df.index:
@@ -355,25 +428,6 @@ def seleziona_tutto(df):
         st.session_state[f"check_{i}"] = True
 
 
-    components.html(
-        f"""
-        <html>
-            <body>
-                <script>
-                    const link = document.createElement('a');
-                    link.href = "data:application/zip;base64,{b64}";
-                    link.download = "{filename}";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                </script>
-            </body>
-        </html>
-        """,
-        height=0
-    )
-
-
 with st.container(border=True):
     st.subheader("1. Carica file Excel")
 
@@ -381,8 +435,81 @@ with st.container(border=True):
 
     st.caption(
         "Carica un file Excel contenente almeno queste informazioni: "
-        "codice articolo, descrizione, e prezzo. "
+        "codice articolo, descrizione, e prezzo."
     )
+
+
+with st.container(border=True):
+    st.subheader("2. Genera locandine manuali")
+
+    st.caption(
+        "Usa questa sezione per creare locandine non in offerta. "
+        "Il prezzo, il codice e le scritte saranno nere."
+    )
+
+    manual_df = st.data_editor(
+        pd.DataFrame(
+            [
+                {"codice_articolo": "", "descrizione": "", "prezzo": ""},
+                {"codice_articolo": "", "descrizione": "", "prezzo": ""},
+                {"codice_articolo": "", "descrizione": "", "prezzo": ""},
+            ]
+        ),
+        num_rows="dynamic",
+        use_container_width=True,
+        key="manual_table"
+    )
+
+    manual_df = manual_df.fillna("").astype(str)
+
+    manual_df_valid = manual_df[
+        (manual_df["codice_articolo"].str.strip() != "") &
+        (manual_df["descrizione"].str.strip() != "") &
+        (manual_df["prezzo"].str.strip() != "")
+    ].copy()
+
+    st.markdown(
+        f"<p style='font-size:14px;color:gray;'>Locandine manuali da generare: <b>{len(manual_df_valid)}</b></p>",
+        unsafe_allow_html=True
+    )
+
+    if st.button("Genera ZIP locandine manuali", use_container_width=True):
+        if manual_df_valid.empty:
+            st.warning("Inserisci almeno una riga completa con codice, descrizione e prezzo.")
+        else:
+            manual_df_valid["codice_articolo"] = (
+                manual_df_valid["codice_articolo"]
+                .astype(str)
+                .str.strip()
+                .str.replace(".0", "", regex=False)
+                .str.zfill(7)
+            )
+
+            status_text_manual = st.empty()
+
+            zip_file_manual = build_zip_from_rows(
+                manual_df_valid.reset_index(drop=True),
+                range(len(manual_df_valid)),
+                status_text=status_text_manual,
+                manuale=True
+            )
+
+            today = datetime.now().strftime("%d-%m-%Y")
+            filename_manual = f"locandine_manuali_{today}.zip"
+
+            st.session_state["zip_file_manual"] = zip_file_manual.getvalue()
+            st.session_state["zip_filename_manual"] = filename_manual
+
+            status_text_manual.success("File manuale generato correttamente.")
+
+    if "zip_file_manual" in st.session_state:
+        st.download_button(
+            label="Scarica ZIP locandine manuali",
+            data=st.session_state["zip_file_manual"],
+            file_name=st.session_state["zip_filename_manual"],
+            mime="application/zip",
+            use_container_width=True
+        )
 
 
 if file:
@@ -410,13 +537,13 @@ if file:
 
             with st.expander("Mostra colonne rilevate"):
                 colonne_pulite = [str(col).replace("_", " ").title() for col in df.columns]
-            
+
                 for colonna in colonne_pulite:
                     st.write(f"• {colonna}")
 
     else:
         with st.container(border=True):
-            st.subheader("2. Scadenza volantino")
+            st.subheader("3. Scadenza volantino")
 
             if "scadenza_offerta" not in df.columns:
                 left_date, center_date, right_date = st.columns([1, 2, 1])
@@ -474,7 +601,7 @@ if file:
         )
 
         with st.container(border=True):
-            st.subheader("3. Ricerca e selezione prodotti")
+            st.subheader("4. Ricerca e selezione prodotti")
 
             search_code = st.text_input(
                 "Cerca prodotto per codice",
@@ -502,13 +629,13 @@ if file:
                 with col2:
                     if st.button("Deseleziona articoli", use_container_width=True):
                         reset_selezione(df)
-                    
+
                         if "zip_file" in st.session_state:
                             del st.session_state["zip_file"]
-                    
+
                         if "zip_filename" in st.session_state:
                             del st.session_state["zip_filename"]
-                    
+
                         st.rerun()
 
                 selected_rows = []
@@ -540,7 +667,7 @@ if file:
                             })
 
         with st.container(border=True):
-            st.subheader("4. Genera locandine")
+            st.subheader("5. Genera locandine offerta")
 
             st.markdown(
                 f"<p style='font-size:14px;color:gray;'>File selezionati: <b>{len(selected_rows)}</b></p>",
@@ -566,7 +693,8 @@ if file:
                     zip_file = build_zip_from_rows(
                         pd.DataFrame(righe_finali).reset_index(drop=True),
                         range(len(righe_finali)),
-                        status_text=status_text
+                        status_text=status_text,
+                        manuale=False
                     )
 
                     today = datetime.now().strftime("%d-%m-%Y")

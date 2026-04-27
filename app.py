@@ -355,25 +355,6 @@ def seleziona_tutto(df):
         st.session_state[f"check_{i}"] = True
 
 
-    components.html(
-        f"""
-        <html>
-            <body>
-                <script>
-                    const link = document.createElement('a');
-                    link.href = "data:application/zip;base64,{b64}";
-                    link.download = "{filename}";
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                </script>
-            </body>
-        </html>
-        """,
-        height=0
-    )
-
-
 with st.container(border=True):
     st.subheader("1. Carica file Excel")
 
